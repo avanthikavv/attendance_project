@@ -27,8 +27,4 @@ def home():
     return "Backend Running Successfully!"
 
 
-if __name__ == "__main__":
-    print(app.url_map)
-
-    # IMPORTANT: Allow access from mobile
-    app.run(host="0.0.0.0", port=5000, debug=True)
+# No app.run() here (Gunicorn handles it)
