@@ -26,5 +26,32 @@ app.register_blueprint(auth_bp)
 def home():
     return "Backend Running Successfully!"
 
+@app.route("/setup-sessions")
+def setup_sessions():
 
+    from database.db_connection import get_connection
+
+    try:
+        db = get_connection()
+        db.autocommit = True
+        cur = db.cursor()
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS sessions_new (
+            session_id SERIAL PRIMARY KEY,
+            course_id INT NOT NULL,
+            classroom_id INT NOT NULL,
+            start_time TIMESTAMP NOT NULL,
+            end_time TIMESTAMP NOT NULL,
+            status VARCHAR(20) DEFAULT 'INACTIVE'
+        );
+        """)
+
+        cur.close()
+        db.close()
+
+        return "sessions_new table created!"
+
+    except Exception as e:
+        return str(e), 500
 # No app.run() here (Gunicorn handles it)
