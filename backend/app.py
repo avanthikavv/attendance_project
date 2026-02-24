@@ -28,3 +28,32 @@ def home():
 
 
 # No app.run() here (Gunicorn handles it)
+
+@app.route("/setup-db")
+def setup_db():
+    from database.db_connection import get_connection
+
+    db = get_connection()
+    cur = db.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        user_id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        role VARCHAR(50),
+        student_id INT
+    );
+    """)
+
+    cur.execute("""
+    INSERT INTO users (email, password, role, student_id)
+    VALUES ('ravi@gmail.com', '1234', 'student', 1)
+    ON CONFLICT (email) DO NOTHING;
+    """)
+
+    db.commit()
+    cur.close()
+    db.close()
+
+    return "Database setup complete!"
