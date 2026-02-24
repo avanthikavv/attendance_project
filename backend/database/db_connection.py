@@ -1,11 +1,12 @@
-import mysql.connector
-from config import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 
 def get_connection():
-    return mysql.connector.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME
+    database_url = os.environ.get("DATABASE_URL")
+
+    return psycopg2.connect(
+        database_url,
+        cursor_factory=RealDictCursor
     )

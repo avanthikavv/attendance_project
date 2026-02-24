@@ -3,6 +3,9 @@ from database.db_connection import get_connection
 
 auth_bp = Blueprint("auth", __name__)
 
+
+
+
 @auth_bp.route("/login", methods=["POST"])
 def login():
 
@@ -20,7 +23,7 @@ def login():
         db = get_connection()
         print("DB:", db)
 
-        cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
         print("CURSOR OK")
 
         query = "SELECT * FROM users WHERE email=%s AND password=%s"
