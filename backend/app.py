@@ -54,4 +54,65 @@ def setup_sessions():
 
     except Exception as e:
         return str(e), 500
+
+@app.route("/setup-master")
+def setup_master():
+
+    from database.db_connection import get_connection
+
+    try:
+        db = get_connection()
+        db.autocommit = True
+        cur = db.cursor()
+
+        # Courses
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS courses (
+            course_id SERIAL PRIMARY KEY,
+            batch_id INT NOT NULL
+        );
+        """)
+
+        # Batches
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS batches (
+            batch_id SERIAL PRIMARY KEY,
+            name VARCHAR(100)
+        );
+        """)
+
+        # Classrooms
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS classrooms (
+            classroom_id SERIAL PRIMARY KEY,
+            name VARCHAR(100)
+        );
+        """)
+
+        # Insert sample data
+        cur.execute("""
+        INSERT INTO batches (batch_id, name)
+        VALUES (1, 'Batch A')
+        ON CONFLICT DO NOTHING;
+        """)
+
+        cur.execute("""
+        INSERT INTO courses (course_id, batch_id)
+        VALUES (1, 1)
+        ON CONFLICT DO NOTHING;
+        """)
+
+        cur.execute("""
+        INSERT INTO classrooms (classroom_id, name)
+        VALUES (1, 'Room 101')
+        ON CONFLICT DO NOTHING;
+        """)
+
+        cur.close()
+        db.close()
+
+        return "Master tables created!"
+
+    except Exception as e:
+        return str(e), 500
 # No app.run() here (Gunicorn handles it)
