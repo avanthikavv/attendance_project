@@ -40,14 +40,14 @@ def add_teacher():
 
         cur.execute("""
         INSERT INTO users (email, password, role, student_id)
-        VALUES ('teacher@gmail.com', '1234', 'teacher', NULL)
+        VALUES (%s, %s, %s, %s)
         ON CONFLICT (email) DO NOTHING;
-        """)
+        """, ("teacher@gmail.com", "1234", "teacher", None))
 
         cur.close()
         db.close()
 
-        return "Teacher added!"
+        return "Teacher added successfully!"
 
     except Exception as e:
-        return str(e), 500
+        return f"Error: {str(e)}", 500
