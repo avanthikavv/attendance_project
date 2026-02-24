@@ -33,27 +33,31 @@ def home():
 def setup_db():
     from database.db_connection import get_connection
 
-    db = get_connection()
-    cur = db.cursor()
+    try:
+        db = get_connection()
+        db.autocommit = True
+        cur = db.cursor()
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        user_id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        role VARCHAR(50),
-        student_id INT
-    );
-    """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            role VARCHAR(50),
+            student_id INT
+        );
+        """)
 
-    cur.execute("""
-    INSERT INTO users (email, password, role, student_id)
-    VALUES ('ravi@gmail.com', '1234', 'student', 1)
-    ON CONFLICT (email) DO NOTHING;
-    """)
+        cur.execute("""
+        INSERT INTO users (email, password, role, student_id)
+        VALUES ('ravi@gmail.com', '1234', 'student', 1)
+        ON CONFLICT (email) DO NOTHING;
+        """)
 
-    db.commit()
-    cur.close()
-    db.close()
+        cur.close()
+        db.close()
 
-    return "Database setup complete!"
+        return "Database setup complete!"
+
+    except Exception as e:
+        return f"Setup failed: {str(e)}", 500
