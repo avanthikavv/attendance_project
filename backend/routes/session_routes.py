@@ -184,3 +184,17 @@ def active_session():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@session_bp.route("/all_sessions", methods=["GET"])
+def all_sessions():
+
+    db = get_connection()
+    cursor = db.cursor()
+
+    cursor.execute("SELECT * FROM sessions_new ORDER BY session_id")
+    rows = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return jsonify(rows)
