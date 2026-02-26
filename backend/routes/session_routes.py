@@ -6,21 +6,16 @@ session_bp = Blueprint("session", __name__)
 
 
 # --------------------------------
-# Auto close expired sessions
+# Auto Close Expired Sessions
 # --------------------------------
-def close_expired_sessions(cursor, db):
+def close_expired_sessions(cursor):
 
-    now = datetime.now()
-
-    query = """
-    UPDATE sessions_new
-    SET status='INACTIVE'
-    WHERE status='ACTIVE'
-      AND end_time < %s
-    """
-
-    cursor.execute(query, (now,))
-    db.commit()
+    cursor.execute("""
+        UPDATE sessions_new
+        SET status = 'INACTIVE'
+        WHERE status = 'ACTIVE'
+        AND end_time < NOW()
+    """)
 
 
 # --------------------------------
@@ -29,21 +24,18 @@ def close_expired_sessions(cursor, db):
 @session_bp.route("/create_session", methods=["POST"])
 def create_session():
 
-    data = request.get_json(force=True)
+    data = request.get_json()
 
     if not data:
         return jsonify({"error": "No JSON data"}), 400
 
-
-    db = None
-    cursor = None
-
-
     try:
 
         db = get_connection()
-        cursor = db.cursor()   # ❗ FIXED (no dictionary=True)
+        cursor = db.cursor()
 
+        # Close expired sessions first
+        close_expired_sessions(cursor)
 
         # --------------------------------
         # Check Course-Batch Relation
@@ -58,48 +50,34 @@ def create_session():
         if not course:
             return jsonify({"error": "Course not found"}), 404
 
-
-        # course[0] = batch_id (Postgres tuple)
-        if str(course[0]) != str(data["batch_id"]):
+        if str(course["batch_id"]) != str(data["batch_id"]):
             return jsonify({"error": "Course does not belong to this batch"}), 400
 
 
         # --------------------------------
         # Insert Session
         # --------------------------------
-        query = """
-        INSERT INTO sessions_new
-        (course_id, classroom_id, start_time, end_time, status)
-        VALUES (%s, %s, %s, %s, 'INACTIVE')
-        """
-
-        cursor.execute(
-            query,
-            (
-                data["course_id"],
-                data["classroom_id"],
-                data["start_time"],
-                data["end_time"]
-            )
-        )
+        cursor.execute("""
+            INSERT INTO sessions_new
+            (course_id, classroom_id, start_time, end_time, status)
+            VALUES (%s, %s, %s, %s, 'INACTIVE')
+        """, (
+            data["course_id"],
+            data["classroom_id"],
+            data["start_time"],
+            data["end_time"]
+        ))
 
         db.commit()
+
+        cursor.close()
+        db.close()
 
         return jsonify({"message": "Session created"})
 
 
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
-
-
-    finally:
-
-        if cursor:
-            cursor.close()
-
-        if db:
-            db.close()
 
 
 
@@ -109,30 +87,36 @@ def create_session():
 @session_bp.route("/start_session/<int:session_id>", methods=["PUT"])
 def start_session(session_id):
 
-    db = get_connection()
-    cursor = db.cursor()
-
     try:
 
-        # Close other active sessions
-        cursor.execute(
-            "UPDATE sessions_new SET status='INACTIVE' WHERE status='ACTIVE'"
-        )
+        db = get_connection()
+        cursor = db.cursor()
+
+        close_expired_sessions(cursor)
+
+        # Close all other active sessions
+        cursor.execute("""
+            UPDATE sessions_new
+            SET status='INACTIVE'
+            WHERE status='ACTIVE'
+        """)
 
         # Start selected session
-        cursor.execute(
-            "UPDATE sessions_new SET status='ACTIVE' WHERE session_id=%s",
-            (session_id,)
-        )
+        cursor.execute("""
+            UPDATE sessions_new
+            SET status='ACTIVE'
+            WHERE session_id=%s
+        """, (session_id,))
 
         db.commit()
 
-        return jsonify({"message": "Session started"})
-
-    finally:
-
         cursor.close()
         db.close()
+
+        return jsonify({"message": "Session started"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 
@@ -142,65 +126,61 @@ def start_session(session_id):
 @session_bp.route("/end_session/<int:session_id>", methods=["PUT"])
 def end_session(session_id):
 
-    db = get_connection()
-    cursor = db.cursor()
+    try:
 
-    cursor.execute(
-        "UPDATE sessions_new SET status='INACTIVE' WHERE session_id=%s",
-        (session_id,)
-    )
+        db = get_connection()
+        cursor = db.cursor()
 
-    db.commit()
+        cursor.execute("""
+            UPDATE sessions_new
+            SET status='INACTIVE'
+            WHERE session_id=%s
+        """, (session_id,))
 
-    cursor.close()
-    db.close()
+        db.commit()
 
-    return jsonify({"message": "Session ended"})
+        cursor.close()
+        db.close()
+
+        return jsonify({"message": "Session ended"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 
 # --------------------------------
-# Active Session
+# Get Active Session
 # --------------------------------
 @session_bp.route("/active_session", methods=["GET"])
 def active_session():
 
-    db = get_connection()
-    cursor = db.cursor()
+    try:
 
+        db = get_connection()
+        cursor = db.cursor()
 
-    # Close expired sessions first
-    close_expired_sessions(cursor, db)
+        close_expired_sessions(cursor)
 
+        cursor.execute("""
+            SELECT *
+            FROM sessions_new
+            WHERE status='ACTIVE'
+              AND start_time <= NOW()
+              AND end_time >= NOW()
+            ORDER BY start_time DESC
+            LIMIT 1
+        """)
 
-    # Get current active session
-    cursor.execute(
-        """
-        SELECT *
-        FROM sessions_new
-        WHERE status='ACTIVE'
-          AND start_time <= NOW()
-          AND end_time >= NOW()
-        ORDER BY start_time DESC
-        LIMIT 1
-        """
-    )
+        session = cursor.fetchone()
 
-    data = cursor.fetchone()
+        cursor.close()
+        db.close()
 
-    cursor.close()
-    db.close()
+        if session:
+            return jsonify(session)
 
+        return jsonify({"message": "No active session"})
 
-    if data:
-        return jsonify({
-            "session_id": data[0],
-            "course_id": data[1],
-            "classroom_id": data[2],
-            "start_time": str(data[3]),
-            "end_time": str(data[4]),
-            "status": data[5]
-        })
-
-
-    return jsonify({"message": "No active session"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
