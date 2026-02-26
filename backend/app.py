@@ -1,19 +1,20 @@
-from flask import Flask
+from flask import Flask, jsonify
+from flask_cors import CORS
+
 from routes.student_routes import student_bp
 from routes.attendance_routes import attendance_bp
 from routes.session_routes import session_bp
 from routes.auth_routes import auth_bp
-from flask_cors import CORS
 
 
 app = Flask(__name__)
 
+# Enable CORS safely
 CORS(
     app,
     resources={r"/*": {"origins": "*"}},
     supports_credentials=True
 )
-
 
 # Register Blueprints
 app.register_blueprint(student_bp)
@@ -22,11 +23,18 @@ app.register_blueprint(session_bp)
 app.register_blueprint(auth_bp)
 
 
+# ---------------------------------
+# Health Check Route
+# ---------------------------------
 @app.route("/")
 def home():
-    return "Backend Running Successfully!"
+    return "Backend Running Successfully!", 200
 
-@app.route("/setup-sessions")
+
+# ---------------------------------
+# Setup Sessions Table
+# ---------------------------------
+@app.route("/setup-sessions", methods=["GET"])
 def setup_sessions():
 
     from database.db_connection import get_connection
@@ -50,12 +58,16 @@ def setup_sessions():
         cur.close()
         db.close()
 
-        return "sessions_new table created!"
+        return jsonify({"message": "sessions_new table created!"}), 200
 
     except Exception as e:
-        return str(e), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route("/setup-master")
+
+# ---------------------------------
+# Setup Master Tables
+# ---------------------------------
+@app.route("/setup-master", methods=["GET"])
 def setup_master():
 
     from database.db_connection import get_connection
@@ -65,19 +77,19 @@ def setup_master():
         db.autocommit = True
         cur = db.cursor()
 
-        # Courses
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS courses (
-            course_id SERIAL PRIMARY KEY,
-            batch_id INT NOT NULL
-        );
-        """)
-
         # Batches
         cur.execute("""
         CREATE TABLE IF NOT EXISTS batches (
             batch_id SERIAL PRIMARY KEY,
             name VARCHAR(100)
+        );
+        """)
+
+        # Courses
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS courses (
+            course_id SERIAL PRIMARY KEY,
+            batch_id INT NOT NULL
         );
         """)
 
@@ -89,30 +101,35 @@ def setup_master():
         );
         """)
 
-        # Insert sample data
+        # Insert default data safely
         cur.execute("""
         INSERT INTO batches (batch_id, name)
         VALUES (1, 'Batch A')
-        ON CONFLICT DO NOTHING;
+        ON CONFLICT (batch_id) DO NOTHING;
         """)
 
         cur.execute("""
         INSERT INTO courses (course_id, batch_id)
         VALUES (1, 1)
-        ON CONFLICT DO NOTHING;
+        ON CONFLICT (course_id) DO NOTHING;
         """)
 
         cur.execute("""
         INSERT INTO classrooms (classroom_id, name)
         VALUES (1, 'Room 101')
-        ON CONFLICT DO NOTHING;
+        ON CONFLICT (classroom_id) DO NOTHING;
         """)
 
         cur.close()
         db.close()
 
-        return "Master tables created!"
+        return jsonify({"message": "Master tables created!"}), 200
 
     except Exception as e:
-        return str(e), 500
-# No app.run() here (Gunicorn handles it)
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------
+# IMPORTANT: No app.run()
+# Gunicorn handles server on Render
+# ---------------------------------
