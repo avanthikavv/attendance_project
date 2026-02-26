@@ -184,6 +184,7 @@ def active_session():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+   
     
 @session_bp.route("/all_sessions", methods=["GET"])
 def all_sessions():
@@ -196,5 +197,9 @@ def all_sessions():
 
     cursor.close()
     db.close()
+
+    for row in rows:
+        row["start_time"] = str(row["start_time"])
+        row["end_time"] = str(row["end_time"])
 
     return jsonify(rows)
