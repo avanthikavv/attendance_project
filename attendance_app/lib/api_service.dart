@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-
   // 🔥 LOCAL BACKEND URL (Laptop IP)
   static const String baseUrl = "http://10.123.3.148:5000";
 
