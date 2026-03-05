@@ -162,9 +162,7 @@ def student_active_sessions(student_id):
         if not student:
             return jsonify([])
 
-
         batch_id = student["batch_id"]
-
 
         # Get active sessions for this batch
         cursor.execute(
@@ -192,8 +190,9 @@ def student_active_sessions(student_id):
               ON a.session_id = se.session_id
              AND a.student_id = %s
 
-            WHERE se.status='ACTIVE'
-              AND c.batch_id = %s
+            WHERE se.batch_id = %s
+              AND NOW() BETWEEN se.start_time AND se.end_time
+              AND se.is_closed = 0
 
             ORDER BY se.start_time DESC
             """,
@@ -204,11 +203,9 @@ def student_active_sessions(student_id):
 
         return jsonify(data)
 
-
     except Exception as e:
 
         return jsonify({"error": str(e)}), 500
-
 
     finally:
 

@@ -37,15 +37,15 @@ def create_session():
         # Insert session (is_closed defaults to 0)
         cursor.execute("""
             INSERT INTO sessions_new
-            (course_id, classroom_id, start_time, end_time, is_closed)
-            VALUES (%s, %s, %s, %s, 0)
-        """, (
+            (course_id, classroom_id, batch_id, start_time, end_time, is_closed)
+            VALUES (%s, %s, %s, %s, %s, 0)
+            """, (
             data["course_id"],
             data["classroom_id"],
+            data["batch_id"],
             data["start_time"],
             data["end_time"]
-        ))
-
+            ))
         db.commit()
 
         cursor.close()

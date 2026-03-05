@@ -185,23 +185,13 @@ class _StudentHomeState extends State<StudentHome> {
     try {
       print("BIOMETRIC FUNCTION STARTED");
 
-      // Check if device supports biometrics
-      bool isAvailable = await auth.isDeviceSupported();
-
-      if (!isAvailable) {
-        print("Biometric not supported");
-        return false;
-      }
-
-      // Check if biometrics are enrolled
       bool canCheck = await auth.canCheckBiometrics;
 
       if (!canCheck) {
-        print("No biometrics enrolled");
+        print("Biometric not available or not enrolled");
         return false;
       }
 
-      // Authenticate
       bool authenticated = await auth.authenticate(
         localizedReason: 'Verify to mark attendance',
         options: const AuthenticationOptions(

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   // 🔥 LOCAL BACKEND URL (Laptop IP)
-  static const String baseUrl = "http://10.123.3.148:5000";
+  static const String baseUrl = "http://10.123.56.76:5000";
 
   // ------------------------
   // Login

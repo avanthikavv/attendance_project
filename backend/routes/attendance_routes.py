@@ -1,8 +1,6 @@
 from flask import Blueprint, request, jsonify
 from database.db_connection import get_connection
-from datetime import datetime
-
-import ipaddress
+from netaddr import IPAddress, IPNetwork
 
 attendance_bp = Blueprint("attendance", __name__)
 
@@ -25,15 +23,18 @@ def mark_attendance():
         return jsonify({"error": "Missing fields"}), 400
 
     try:
+
         db = get_connection()
         cursor = db.cursor(dictionary=True)
 
-        # Get active session (TIME + NOT CLOSED)
+        # ---------------------------------
+        # Get active session
+        # ---------------------------------
         cursor.execute("""
             SELECT *
             FROM sessions_new
             WHERE NOW() BETWEEN start_time AND end_time
-              AND is_closed = 0
+            AND is_closed = 0
             ORDER BY start_time DESC
             LIMIT 1
         """)
@@ -45,7 +46,33 @@ def mark_attendance():
 
         session_id = session["session_id"]
 
+        # ---------------------------------
+        # IP CHECK
+        # ---------------------------------
+        student_ip = request.remote_addr
+        print("Student IP:", student_ip)
+
+        cursor.execute("""
+            SELECT cl.ip_range
+            FROM sessions_new se
+            JOIN classrooms cl
+            ON se.classroom_id = cl.classroom_id
+            WHERE se.session_id = %s
+        """, (session_id,))
+
+        room = cursor.fetchone()
+
+        if not room:
+            return jsonify({"error": "Classroom not found"}), 404
+
+        ip_range = room["ip_range"]
+
+        if IPAddress(student_ip) not in IPNetwork(ip_range):
+            return jsonify({"error": "Not inside classroom network"}), 403
+
+        # ---------------------------------
         # Check duplicate attendance
+        # ---------------------------------
         cursor.execute("""
             SELECT 1
             FROM attendance_new
@@ -55,7 +82,9 @@ def mark_attendance():
         if cursor.fetchone():
             return jsonify({"error": "already_marked"}), 409
 
+        # ---------------------------------
         # Insert attendance
+        # ---------------------------------
         cursor.execute("""
             INSERT INTO attendance_new
             (student_id, session_id, status)
@@ -64,68 +93,58 @@ def mark_attendance():
 
         db.commit()
 
-        cursor.close()
-        db.close()
-
         return jsonify({
             "message": "success",
             "session_id": session_id
         }), 200
 
     except Exception as e:
+
         return jsonify({"error": str(e)}), 500
+
+    finally:
+
+        cursor.close()
+        db.close()
 
 
 # ---------------------------------
-# Check If Already Marked (Student)
+# Check If Already Marked
 # ---------------------------------
 @attendance_bp.route("/check_attendance/<int:student_id>", methods=["GET"])
 def check_attendance(student_id):
-
-    db = None
-    cursor = None
-
 
     try:
 
         db = get_connection()
         cursor = db.cursor(dictionary=True)
 
-
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT 1
             FROM attendance_new a
             JOIN sessions_new s
-              ON a.session_id = s.session_id
+            ON a.session_id = s.session_id
             WHERE a.student_id=%s
-              AND s.status='ACTIVE'
-            """,
-            (student_id,)
-        )
+            AND NOW() BETWEEN s.start_time AND s.end_time
+            AND s.is_closed = 0
+        """, (student_id,))
 
         data = cursor.fetchone()
-
 
         if data:
             return jsonify({"marked": True})
 
-
         return jsonify({"marked": False})
-
 
     except Exception as e:
 
         return jsonify({"error": str(e)}), 500
 
-
     finally:
 
-        if cursor:
-            cursor.close()
+        cursor.close()
+        db.close()
 
-        if db:
-            db.close()
 
 # -------------------------------
 # Student Attendance History
@@ -133,29 +152,33 @@ def check_attendance(student_id):
 @attendance_bp.route("/student_history/<int:student_id>", methods=["GET"])
 def student_history(student_id):
 
-    db = get_connection()
-    cursor = db.cursor(dictionary=True)
+    try:
 
-    query = """
-    SELECT 
-        c.course_name,
-        a.status,
-        a.timestamp
-    FROM attendance_new a
+        db = get_connection()
+        cursor = db.cursor(dictionary=True)
 
-    JOIN sessions_new s ON a.session_id = s.session_id
-    JOIN courses c ON s.course_id = c.course_id
+        query = """
+        SELECT 
+            c.course_name,
+            a.status,
+            a.timestamp
+        FROM attendance_new a
+        JOIN sessions_new s ON a.session_id = s.session_id
+        JOIN courses c ON s.course_id = c.course_id
+        WHERE a.student_id = %s
+        ORDER BY a.timestamp DESC
+        """
 
-    WHERE a.student_id = %s
+        cursor.execute(query, (student_id,))
+        data = cursor.fetchall()
 
-    ORDER BY a.timestamp DESC
-    """
+        return jsonify(data)
 
-    cursor.execute(query, (student_id,))
+    except Exception as e:
 
-    data = cursor.fetchall()
+        return jsonify({"error": str(e)}), 500
 
-    db.close()
+    finally:
 
-    return jsonify(data)
-
+        cursor.close()
+        db.close()
