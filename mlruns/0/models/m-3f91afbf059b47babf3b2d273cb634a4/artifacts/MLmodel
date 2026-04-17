@@ -1,0 +1,23 @@
+artifact_path: file:C:/Users/DELL/Desktop/attendance_project/mlruns/0/models/m-3f91afbf059b47babf3b2d273cb634a4/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.12
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.10.1
+model_id: m-3f91afbf059b47babf3b2d273cb634a4
+model_size_bytes: 435
+model_uuid: m-3f91afbf059b47babf3b2d273cb634a4
+prompts: null
+run_id: dddbbd78e4c64f8d84f733fda0d0373f
+utc_time_created: '2026-03-20 17:45:50.240981'

@@ -17,20 +17,14 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
 
   void login() async {
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     var response = await ApiService.login(
       emailController.text,
       passwordController.text,
     );
 
-    print("LOGIN RESPONSE: $response");
-
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
 
     if (response != null) {
       if (response["role"] == "student") {
@@ -47,39 +41,89 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Login Failed")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Login Failed")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
-
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-
-        child: Column(
-          children: [
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: "Email"),
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.lock_outline,
+                  size: 80,
+                  color: Colors.blueAccent,
+                ),
+                const SizedBox(height: 15),
+                const Text(
+                  "Welcome Back",
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Login to continue",
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 30),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: emailController,
+                        decoration: const InputDecoration(
+                          labelText: "Email",
+                          prefixIcon: Icon(Icons.email),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: "Password",
+                          prefixIcon: Icon(Icons.lock),
+                        ),
+                      ),
+                      const SizedBox(height: 25),
+                      isLoading
+                          ? const CircularProgressIndicator()
+                          : SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: login,
+                                child: const Text("LOGIN"),
+                              ),
+                            ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
-
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password"),
-            ),
-
-            const SizedBox(height: 20),
-
-            isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(onPressed: login, child: const Text("Login")),
-          ],
+          ),
         ),
       ),
     );

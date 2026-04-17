@@ -19,9 +19,6 @@ class _TeacherHomeState extends State<TeacherHome> {
 
   bool isLoading = false;
 
-  // -------------------------
-  // Pick Date
-  // -------------------------
   Future<void> pickDate() async {
     DateTime? date = await showDatePicker(
       context: context,
@@ -31,15 +28,10 @@ class _TeacherHomeState extends State<TeacherHome> {
     );
 
     if (date != null) {
-      setState(() {
-        selectedDate = date;
-      });
+      setState(() => selectedDate = date);
     }
   }
 
-  // -------------------------
-  // Pick Start Time (24H)
-  // -------------------------
   Future<void> pickStartTime() async {
     TimeOfDay? time = await showTimePicker(
       context: context,
@@ -53,15 +45,10 @@ class _TeacherHomeState extends State<TeacherHome> {
     );
 
     if (time != null) {
-      setState(() {
-        startTime = time;
-      });
+      setState(() => startTime = time);
     }
   }
 
-  // -------------------------
-  // Pick End Time (24H)
-  // -------------------------
   Future<void> pickEndTime() async {
     TimeOfDay? time = await showTimePicker(
       context: context,
@@ -75,15 +62,10 @@ class _TeacherHomeState extends State<TeacherHome> {
     );
 
     if (time != null) {
-      setState(() {
-        endTime = time;
-      });
+      setState(() => endTime = time);
     }
   }
 
-  // -------------------------
-  // Format Date + Time
-  // -------------------------
   String formatDateTime(DateTime date, TimeOfDay time) {
     final dt = DateTime(
       date.year,
@@ -96,119 +78,159 @@ class _TeacherHomeState extends State<TeacherHome> {
     return dt.toString().substring(0, 19);
   }
 
-  // -------------------------
-  // Create Session
-  // -------------------------
   void createSession() async {
     if (selectedDate == null || startTime == null || endTime == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Select date & time")));
-
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Select date & time")),
+      );
       return;
     }
 
     String start = formatDateTime(selectedDate!, startTime!);
     String end = formatDateTime(selectedDate!, endTime!);
 
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     bool success = await ApiService.createSession(
       int.parse(batchIdController.text),
       int.parse(courseIdController.text),
       int.parse(classroomIdController.text),
-
       start,
       end,
     );
 
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
 
     if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Session Created ✅")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Session Created ✅")),
+      );
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Session Failed ❌")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Session Failed ❌")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Teacher Dashboard")),
-
+      appBar: AppBar(
+        title: const Text("Teacher Dashboard"),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
-
         child: SingleChildScrollView(
           child: Column(
             children: [
+              const SizedBox(height: 10),
+              const Icon(
+                Icons.dashboard_customize,
+                size: 60,
+                color: Colors.blueAccent,
+              ),
+              const SizedBox(height: 10),
               const Text(
                 "Create Attendance Session",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-
-              const SizedBox(height: 20),
-
-              TextField(
-                controller: batchIdController,
-                decoration: const InputDecoration(labelText: "Batch ID"),
-              ),
-
-              TextField(
-                controller: courseIdController,
-                decoration: const InputDecoration(labelText: "Course ID"),
-              ),
-
-              TextField(
-                controller: classroomIdController,
-                decoration: const InputDecoration(labelText: "Classroom ID"),
-              ),
-
-              const SizedBox(height: 20),
-
-              ElevatedButton(
-                onPressed: pickDate,
-                child: Text(
-                  selectedDate == null
-                      ? "Select Date"
-                      : "Date: ${selectedDate!.toLocal()}".split(' ')[0],
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-
-              ElevatedButton(
-                onPressed: pickStartTime,
-                child: Text(
-                  startTime == null
-                      ? "Select Start Time"
-                      : "Start: ${startTime!.format(context)}",
+              const SizedBox(height: 25),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    )
+                  ],
                 ),
-              ),
-
-              ElevatedButton(
-                onPressed: pickEndTime,
-                child: Text(
-                  endTime == null
-                      ? "Select End Time"
-                      : "End: ${endTime!.format(context)}",
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: createSession,
-                      child: const Text("Create Session"),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: batchIdController,
+                      decoration: const InputDecoration(
+                        labelText: "Batch ID",
+                        prefixIcon: Icon(Icons.group),
+                      ),
                     ),
+                    const SizedBox(height: 15),
+                    TextField(
+                      controller: courseIdController,
+                      decoration: const InputDecoration(
+                        labelText: "Course ID",
+                        prefixIcon: Icon(Icons.book),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    TextField(
+                      controller: classroomIdController,
+                      decoration: const InputDecoration(
+                        labelText: "Classroom ID",
+                        prefixIcon: Icon(Icons.meeting_room),
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: pickDate,
+                        icon: const Icon(Icons.calendar_today),
+                        label: Text(
+                          selectedDate == null
+                              ? "Select Date"
+                              : "${selectedDate!.toLocal()}".split(' ')[0],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: pickStartTime,
+                        icon: const Icon(Icons.access_time),
+                        label: Text(
+                          startTime == null
+                              ? "Start Time"
+                              : "${startTime!.format(context)}",
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: pickEndTime,
+                        icon: const Icon(Icons.access_time_filled),
+                        label: Text(
+                          endTime == null
+                              ? "End Time"
+                              : "${endTime!.format(context)}",
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    isLoading
+                        ? const CircularProgressIndicator()
+                        : SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: createSession,
+                              child: const Text("CREATE SESSION"),
+                            ),
+                          ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

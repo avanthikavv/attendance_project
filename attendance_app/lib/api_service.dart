@@ -2,12 +2,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  // 🔥 LOCAL BACKEND URL (Laptop IP)
-  static const String baseUrl = "http://10.123.56.76:5000";
+  static const String baseUrl = "http://10.106.11.45:5000";
 
-  // ------------------------
-  // Login
-  // ------------------------
+  static const Map<String, String> headers = {
+    "Content-Type": "application/json",
+  };
+
+  // LOGIN
   static Future<Map<String, dynamic>?> login(
     String email,
     String password,
@@ -15,7 +16,7 @@ class ApiService {
     try {
       var response = await http.post(
         Uri.parse("$baseUrl/login"),
-        headers: {"Content-Type": "application/json"},
+        headers: headers,
         body: jsonEncode({
           "email": email,
           "password": password,
@@ -33,9 +34,7 @@ class ApiService {
     }
   }
 
-  // ------------------------
-  // Check Attendance
-  // ------------------------
+  // CHECK ATTENDANCE
   static Future<bool> checkAttendance(int studentId) async {
     try {
       var response = await http.get(
@@ -54,9 +53,7 @@ class ApiService {
     }
   }
 
-  // ------------------------
-  // Mark Attendance
-  // ------------------------
+  // MARK ATTENDANCE
   static Future<String> markAttendance(
     int studentId,
     String status,
@@ -64,7 +61,7 @@ class ApiService {
     try {
       var response = await http.post(
         Uri.parse("$baseUrl/mark_attendance"),
-        headers: {"Content-Type": "application/json"},
+        headers: headers,
         body: jsonEncode({
           "student_id": studentId,
           "status": status,
@@ -81,9 +78,7 @@ class ApiService {
     }
   }
 
-  // ------------------------
-  // Create Session (Teacher)
-  // ------------------------
+  // CREATE SESSION
   static Future<bool> createSession(
     int batchId,
     int courseId,
@@ -94,7 +89,7 @@ class ApiService {
     try {
       var response = await http.post(
         Uri.parse("$baseUrl/create_session"),
-        headers: {"Content-Type": "application/json"},
+        headers: headers,
         body: jsonEncode({
           "batch_id": batchId,
           "course_id": courseId,
@@ -111,9 +106,7 @@ class ApiService {
     }
   }
 
-  // ------------------------
-  // Get Active Session
-  // ------------------------
+  // GET ACTIVE SESSION
   static Future<Map<String, dynamic>?> getActiveSession() async {
     try {
       var response = await http.get(
@@ -137,9 +130,7 @@ class ApiService {
     }
   }
 
-  // ------------------------
-  // Student Dashboard Info
-  // ------------------------
+  // STUDENT DASHBOARD
   static Future<Map<String, dynamic>?> getStudentDashboard(
     int studentId,
   ) async {
@@ -159,9 +150,7 @@ class ApiService {
     }
   }
 
-  // ------------------------
-  // Get Active Sessions (Student)
-  // ------------------------
+  // STUDENT ACTIVE SESSIONS
   static Future<List<dynamic>> getStudentActiveSessions(
     int studentId,
   ) async {

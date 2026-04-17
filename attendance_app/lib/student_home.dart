@@ -21,13 +21,9 @@ class _StudentHomeState extends State<StudentHome> {
   @override
   void initState() {
     super.initState();
-
     loadSessions();
   }
 
-  // ------------------------
-  // Load Sessions
-  // ------------------------
   void loadSessions() async {
     var data = await ApiService.getStudentActiveSessions(
       widget.studentId,
@@ -39,108 +35,117 @@ class _StudentHomeState extends State<StudentHome> {
     });
   }
 
-  // ------------------------
-  // Mark Attendance
-  // ------------------------
-  // ------------------------
-// Mark Attendance
-// ------------------------
   void markAttendance(int sessionId) async {
-    print("MARK BUTTON PRESSED");
-
-    // Step 1: Biometric Check
     bool verified = await authenticateUser();
 
     if (!verified) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Biometric Verification Failed ❌"),
-        ),
+        const SnackBar(content: Text("Biometric Verification Failed ❌")),
       );
       return;
     }
 
-    // Step 2: If biometric success → Call backend
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     String result = await ApiService.markAttendance(
       widget.studentId,
       "Present",
     );
 
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
 
     if (result == "success") {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Attendance Marked Successfully ✅"),
-        ),
+        const SnackBar(content: Text("Attendance Marked Successfully ✅")),
       );
     } else if (result == "already_marked") {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Already Marked ⚠️"),
-        ),
+        const SnackBar(content: Text("Already Marked ⚠️")),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Attendance Failed ❌"),
-        ),
+        const SnackBar(content: Text("Attendance Failed ❌")),
       );
     }
 
     loadSessions();
   }
 
-  // ------------------------
-  // Session Card
-  // ------------------------
   Widget sessionCard(Map data) {
     bool marked = data["already_marked"] == 1;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(15),
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey),
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Course: ${data["course_name"]}",
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text("Classroom: ${data["room_name"]}"),
-          const SizedBox(height: 15),
-          Center(
-            child: marked
-                ? const Text(
-                    "Already Marked ✅",
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                : ElevatedButton(
-                    onPressed: () {
-                      markAttendance(
-                        data["session_id"],
-                      );
-                    },
-                    child: const Text("Mark Attendance"),
+          Row(
+            children: [
+              const Icon(Icons.menu_book, color: Colors.blueAccent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  data["course_name"],
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 18, color: Colors.grey),
+              const SizedBox(width: 5),
+              Text(
+                data["room_name"],
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          marked
+              ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      "✔ Attendance Marked",
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                )
+              : SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      markAttendance(data["session_id"]);
+                    },
+                    icon: const Icon(Icons.fingerprint),
+                    label: const Text("Mark Attendance"),
+                  ),
+                ),
         ],
       ),
     );
@@ -152,16 +157,25 @@ class _StudentHomeState extends State<StudentHome> {
       appBar: AppBar(
         title: const Text("Student Dashboard"),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(strokeWidth: 3),
             )
           : sessions.isEmpty
               ? const Center(
-                  child: Text(
-                    "No Active Sessions ❌",
-                    style: TextStyle(fontSize: 18),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.event_busy, size: 60, color: Colors.grey),
+                      SizedBox(height: 10),
+                      Text(
+                        "No Active Sessions",
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                    ],
                   ),
                 )
               : Padding(
@@ -169,26 +183,18 @@ class _StudentHomeState extends State<StudentHome> {
                   child: ListView.builder(
                     itemCount: sessions.length,
                     itemBuilder: (context, index) {
-                      return sessionCard(
-                        sessions[index],
-                      );
+                      return sessionCard(sessions[index]);
                     },
                   ),
                 ),
     );
   }
 
-// ------------------------
-// Biometric Verification
-// ------------------------
   Future<bool> authenticateUser() async {
     try {
-      print("BIOMETRIC FUNCTION STARTED");
-
       bool canCheck = await auth.canCheckBiometrics;
 
       if (!canCheck) {
-        print("Biometric not available or not enrolled");
         return false;
       }
 
@@ -201,11 +207,8 @@ class _StudentHomeState extends State<StudentHome> {
         ),
       );
 
-      print("Biometric result: $authenticated");
-
       return authenticated;
     } catch (e) {
-      print("Biometric Error: $e");
       return false;
     }
   }
